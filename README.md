@@ -48,19 +48,38 @@ Where the table index is a number of the table inside of the fits file.
 
 Usage
 -----
+Within data/SuperWASP_tile000042_wget.bat:
+
+    wget -O '1SWASP_J001905.33-441133.1_lc.tbl' 'http://exoplanetarchive.ipac.caltech.edu:80/data/ETSS//SuperWASP/TBL/DR1/tile000042/1SWASP_J001905.33-441133.1_lc.tbl' -a search_336789464.log
+
 To search for a transit within a range of orbital periods:
 
-    waspscan -f data/1SWASP_xyz.tbl --min 0.5 --max 3.0
+    waspscan -f 1SWASP_J001905.33-441133.1_lc.tbl --min 2.0 --max 2.1
 
-The above will search a particular log file for orbits in the range 0.5 to 3 days. If a transit is found then it will be plotted as *png* files saved to the current directory.
+The above will search a particular log file for orbits in the range 2.0 to 2.1 days. If a transit is found then it will be plotted as *png* files saved to the current directory.
 
-If you already know that a log file contains a transit, and you know the orbital period, then you can produce plots as follows:
+    > 10554 values loaded
+    > orbital_period_days 2.075600
 
-    waspscan -f data/1SWASP_xyz.tbl -p [days]
+We found one! We can view it with:
+
+    shotwell 1SWASP_J001905.33-441133.1_lc_distr.png
+
+But it doesn't look quite right. We can manually tweak around with the orbital period to get the light curve as focussed as possible:
+
+    waspscan -f 1SWASP_J001905.33-441133.1_lc.tbl --period 2.07592
+    shotwell 1SWASP_J001905.33-441133.1_lc_distr.png
+
+And also increase the vertical scale a little:
+
+    waspscan -f 1SWASP_J001905.33-441133.1_lc.tbl --period 2.07592 --vscale 1.4
+    shotwell 1SWASP_J001905.33-441133.1_lc_distr.png
 
 If you want to scan multiple *tbl* files or *fits* files within a directory there's also a helper script for that purpose:
 
     waspscandir [minimum period] [maximum period]
+
+Other parameters can also be specified. See the --help option for details.
 
 Log files will be scanned one by one and if transits are found then plot images will be generated for them within the same directory for subsequent manual review.
 
@@ -100,8 +119,8 @@ J001128.53-443020.8 has a possible [opposition surge](https://en.wikipedia.org/w
 | Series              | Period (days) | RA         | Dec        | Date       |
 |---------------------|---------------|------------|------------|------------|
 | J001905.33-441133.1 |  2.07592      |   4.772222 | -44.192553 | 2016-03-06 |
-| J001128.53-443020.8 |	 0.95055      |   2.868903 | -44.505783 | 2016-03-06 |
-| J000948.40-442017.0 |	 1.05621      |	  2.451678 | -44.338056 | 2016-03-01 |
+| J001128.53-443020.8 |  0.95055      |   2.868903 | -44.505783 | 2016-03-06 |
+| J000948.40-442017.0 |  1.05621      |   2.451678 | -44.338056 | 2016-03-01 |
 | J191552.31+380252.2 |  1.69107      | 288.967958 |  38.047858 | 2016-01-15 |
 | J191554.35+380338.2 |  2.28720      | 288.976461 |  38.060628 | 2016-01-15 |
 | J191548.18+380236.2 |  1.69142      | 288.950786 |  38.043403 | 2016-01-03 |
