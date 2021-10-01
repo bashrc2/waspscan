@@ -3,7 +3,7 @@
   This is based on the example from Rosetta Code
   http://rosettacode.org/wiki/Fast_Fourier_transform#C
   which was originally under GNU Free Documentation License 1.2
-  bob@robotics.uk.to
+  bob@libreserver.org
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by

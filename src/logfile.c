@@ -1,7 +1,7 @@
 /*
   WASPscan: Detection of exoplanet transits
   Copyright (C) 2015 Bob Mottram
-  bob@robotics.uk.to
+  bob@libreserver.org
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
