@@ -1,0 +1,94 @@
+#!/usr/bin/python
+
+#  Convert from fits format to a table
+#  Copyright (C) 2015 Bob Mottram
+#  bob@robotics.uk.to
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import sys
+from astropy.io import fits
+
+if len(sys.argv) < 2:
+    print "Please specify a fits filename"
+    sys.exit(-1)
+filename = sys.argv[1]
+
+try:
+    hdulist = fits.open(filename)
+except:
+    print "File not found " + filename
+    sys.exit(-2)
+
+listname="PHOTOMETRY"
+if len(sys.argv) > 2:
+    if sys.argv[2]:
+        if sys.argv[2]>='0' and sys.argv[2]<='9':
+            listname=int(sys.argv[2])
+        else:
+            listname=sys.argv[2]
+
+try:
+    scidata = hdulist[listname].data
+except:
+    print "Table not found"
+    sys.exit(-3)
+
+no_of_fields = len(scidata[0])
+
+# Extract the headers
+headers = repr(hdulist[listname].header).split("\n")
+col = 0
+field_units = []
+field_name = []
+for h in headers:
+    typestr=h.split("=")[0].strip()
+    if typestr.startswith("TTYPE"):
+        name = h.split("=")[1].strip()
+        if "'" in name:
+            title = name.split("'")[1].strip()
+            if len(title) > 0:
+                field_name.append(title)
+    if typestr.startswith("TUNIT"):
+        name = h.split("=")[1].strip()
+        if "'" in name:
+            title = name.split("'")[1].strip()
+            if len(title) > 0:
+                field_units.append(title)
+
+# Field name header
+sys.stdout.write("| ")
+for i in range(len(field_name)):
+    if i < (len(field_name)-1):
+        sys.stdout.write(field_name[i] + " ")
+    else:
+        print field_name[i]
+
+# Field units header
+sys.stdout.write("| ")
+for i in range(len(field_units)):
+    if i < (len(field_units)-1):
+        sys.stdout.write('"' + field_units[i] + '" ')
+    else:
+        print '"' + field_units[i] + '"'
+
+# Show the data
+for i in range(len(scidata)):
+    for j in range(no_of_fields):
+        if j < no_of_fields-1:
+            sys.stdout.write(str(scidata[i][j]) + " ")
+        else:
+            print scidata[i][j]
+
+sys.exit(0)

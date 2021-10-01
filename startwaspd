@@ -1,0 +1,248 @@
+#!/bin/bash
+
+#  Copyright (C) 2015-2016 Bob Mottram
+#  bob@robotics.uk.to
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+DOWNLOAD_ARCHIVE="http://exoplanetarchive.ipac.caltech.edu/bulk_data_download/SuperWASP_wget.tar.gz"
+START_PERCENT=0
+END_PERCENT=100
+MIN_DATA_SAMPLES=1000
+MIN_PERIOD_DAYS=0.5
+MAX_PERIOD_DAYS=4.0
+USERNAME=wasp
+WORKING_DIR=/home/$USERNAME
+FITS_LOG=$WORKING_DIR/fits.log
+listname="PHOTOMETRY"
+TABLE_TYPE="wasp"
+EMAIL_ADDRESS=
+INIT_SYSTEM="d"
+STORE_PATH=
+MIN_FILE_SIZE=2048
+
+function show_help {
+    echo ''
+    echo 'startwaspd --archive [bulk data download url]'
+    echo '           --start [percent] --end [percent]'
+    echo '           --minsamples [number]'
+    echo '           --min [period days] --max [period days]'
+    echo '           --list [fits file table index name]'
+    echo '           --email [email address]'
+    echo '           --init'
+    echo '           --store [path]'
+    echo '           --minfilesize [bytes]'
+    echo ''
+    exit 0
+}
+
+while [[ $# > 1 ]]
+do
+key="$1"
+
+case $key in
+    -h|--help)
+    show_help
+    ;;
+    -a|--archive)
+    shift
+    DOWNLOAD_ARCHIVE="$1"
+    ;;
+    -m|--minsamples)
+    shift
+    MIN_DATA_SAMPLES="$1"
+    ;;
+    -0|--min)
+    shift
+    MIN_PERIOD_DAYS="$1"
+    ;;
+    -1|--max)
+    shift
+    MAX_PERIOD_DAYS="$1"
+    ;;
+    -s|--start)
+    shift
+    START_PERCENT="$1"
+    ;;
+    -e|--end)
+    shift
+    END_PERCENT="$1"
+    ;;
+    -l|--list)
+    shift
+    listname="$1"
+    ;;
+    -t|--type)
+    shift
+    TABLE_TYPE="$1"
+    ;;
+    --log)
+    shift
+    FITS_LOG="$1"
+    ;;
+    --email)
+    shift
+    EMAIL_ADDRESS="$1"
+    ;;
+    --init)
+    INIT_SYSTEM="init"
+    ;;
+    --store)
+    STORE_PATH="$1"
+    ;;
+    --minfilesize)
+    MIN_FILE_SIZE=$1
+    ;;
+    *)
+    # unknown option
+    ;;
+esac
+shift
+done
+
+if [ ! -d $WORKING_DIR ]; then
+    adduser --disabled-login --gecos 'WASP' $USERNAME
+fi
+chown -R $USERNAME:$USERNAME $WORKING_DIR
+
+if [ ! -d /etc/systemd ]; then
+    echo "systemd init system not found"
+    INIT_SYSTEM="init"
+fi
+
+if [[ $INIT_SYSTEM == "d" ]]; then
+    # systemd daemon
+    systemd stop waspd
+
+    echo '[Unit]' > /etc/systemd/system/waspd.service
+    echo 'Description=WASPd (transit detection daemon)' >> /etc/systemd/system/waspd.service
+    echo 'After=syslog.target' >> /etc/systemd/system/waspd.service
+    echo 'After=network.target' >> /etc/systemd/system/waspd.service
+    echo '' >> /etc/systemd/system/waspd.service
+    echo '[Service]' >> /etc/systemd/system/waspd.service
+    echo 'Type=simple' >> /etc/systemd/system/waspd.service
+    echo "User=$USERNAME" >> /etc/systemd/system/waspd.service
+    echo "Group=$USERNAME" >> /etc/systemd/system/waspd.service
+    echo "WorkingDirectory=$WORKING_DIR" >> /etc/systemd/system/waspd.service
+    exec_str="ExecStart=/usr/bin/waspd --min $MIN_PERIOD_DAYS --max $MAX_PERIOD_DAYS --start $START_PERCENT --end $END_PERCENT --list $listname --type $TABLE_TYPE --minsamples $MIN_DATA_SAMPLES --minfilesize $MIN_FILE_SIZE"
+    if [ $EMAIL_ADDRESS ]; then
+        exec_str="$exec_str --email $EMAIL_ADDRESS"
+    fi
+    if [ $STORE_PATH ]; then
+        if [ ! -d $STORE_PATH ]; then
+            mkdir -p $STORE_PATH
+        fi
+        exec_str="$exec_str --store $STORE_PATH"
+    fi
+    echo "$exec_str" >> /etc/systemd/system/waspd.service
+    echo 'Restart=always' >> /etc/systemd/system/waspd.service
+    echo "Environment=\"USER=waspd\" \"HOME=$WORKING_DIR\"" >> /etc/systemd/system/waspd.service
+    echo '' >> /etc/systemd/system/waspd.service
+    echo '[Install]' >> /etc/systemd/system/waspd.service
+    echo 'WantedBy=multi-user.target' >> /etc/systemd/system/waspd.service
+else
+    # init daemon
+    service waspd stop
+    echo '#!/bin/bash' >> /etc/init.d/waspd
+    echo '### BEGIN INIT INFO' >> /etc/init.d/waspd
+    echo '# Provides: waspd' >> /etc/init.d/waspd
+    echo '# Required-Start:' >> /etc/init.d/waspd
+    echo '# Required-Stop:' >> /etc/init.d/waspd
+    echo '# Default-Start: 2 3 4 5' >> /etc/init.d/waspd
+    echo '# Default-Stop: 0 1 6' >> /etc/init.d/waspd
+    echo '# Short-Description: Search for exoplanet transits' >> /etc/init.d/waspd
+    echo '# Description: Searches for exoplanet transits within WASP data' >> /etc/init.d/waspd
+    echo '### END INIT INFO' >> /etc/init.d/waspd
+    echo 'RETVAL=0' >> /etc/init.d/waspd
+    echo "USERNAME='$USERNAME'" >> /etc/init.d/waspd
+    echo '' >> /etc/init.d/waspd
+    echo 'start() {' >> /etc/init.d/waspd
+    echo "    echo 'Starting $USERNAME...'" >> /etc/init.d/waspd
+    if [ $EMAIL_ADDRESS ]; then
+        echo "    su --command \"/usr/bin/waspd --min $MIN_PERIOD_DAYS --max $MAX_PERIOD_DAYS --start $START_PERCENT --end $END_PERCENT --list $listname --type $TABLE_TYPE --email $EMAIL_ADDRESS --minsamples $MIN_DATA_SAMPLES --minfilesize $MIN_FILE_SIZE\" $USERNAME" >> /etc/init.d/waspd
+    else
+        echo "    su --command \"/usr/bin/waspd --min $MIN_PERIOD_DAYS --max $MAX_PERIOD_DAYS --start $START_PERCENT --end $END_PERCENT --list $listname --type $TABLE_TYPE --minsamples $MIN_DATA_SAMPLES --minfilesize $MIN_FILE_SIZE\" $USERNAME" >> /etc/init.d/waspd
+    fi
+    echo '}' >> /etc/init.d/waspd
+    echo '' >> /etc/init.d/waspd
+    echo 'stop() {' >> /etc/init.d/waspd
+    echo "    echo 'Stopping $USERNAME...'" >> /etc/init.d/waspd
+    echo '}' >> /etc/init.d/waspd
+    echo '' >> /etc/init.d/waspd
+    echo 'case "$1" in' >> /etc/init.d/waspd
+    echo '    start)' >> /etc/init.d/waspd
+    echo '        start' >> /etc/init.d/waspd
+    echo '        ;;' >> /etc/init.d/waspd
+    echo '    stop)' >> /etc/init.d/waspd
+    echo '        stop' >> /etc/init.d/waspd
+    echo '        ;;' >> /etc/init.d/waspd
+    echo '    restart)' >> /etc/init.d/waspd
+    echo '        stop' >> /etc/init.d/waspd
+    echo '        sleep 3' >> /etc/init.d/waspd
+    echo '        start' >> /etc/init.d/waspd
+    echo '        ;;' >> /etc/init.d/waspd
+    echo '    *)' >> /etc/init.d/waspd
+    echo '    echo "Usage: $0 {start|stop|restart}"' >> /etc/init.d/waspd
+    echo '    RETVAL=1' >> /etc/init.d/waspd
+    echo 'esac' >> /etc/init.d/waspd
+    echo 'exit $RETVAL' >> /etc/init.d/waspd
+fi
+
+# remove any previously remembered line number
+STORED_LINE_NO=$WORKING_DIR/line.txt
+if [ -f $STORED_LINE_NO ]; then
+    rm -f $STORED_LINE_NO
+fi
+
+# clear the searched log
+if [ -f $WORKING_DIR/searched.log ]; then
+    rm -f $WORKING_DIR/searched.log
+fi
+
+# download and extract the bulk data
+cd $WORKING_DIR
+if [ ! -f $WORKING_DIR/*.tar.gz ]; then
+    wget $DOWNLOAD_ARCHIVE
+    if [ ! "$?" = "0" ]; then
+        exit 32545
+    fi
+fi
+tar -xzvf *.tar.gz
+
+# join all the wget scripts together into a single log file
+rm -f $FITS_LOG
+LOG_FILES=*.bat
+for f in $LOG_FILES
+do
+    echo "Extracting from $f"
+    grep ".fits" $f >> $FITS_LOG
+done
+rm *.bat
+
+if [[ $INIT_SYSTEM == "d" ]]; then
+    systemctl enable waspd
+    systemctl daemon-reload
+    systemctl restart waspd
+else
+    chmod +x /etc/init.d/waspd
+    update-rc.d waspd defaults
+    service waspd start
+fi
+
+if [ ! "$?" = "0" ]; then
+    exit 4643
+fi
+
+echo 'waspd started'
+exit 0

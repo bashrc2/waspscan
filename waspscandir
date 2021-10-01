@@ -1,0 +1,155 @@
+#!/bin/bash
+#  Copyright (C) 2015 Bob Mottram
+#  bob@robotics.uk.to
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+MIN_PERIOD_DAYS=0.5
+MAX_PERIOD_DAYS=4.0
+listname="PHOTOMETRY"
+TABLE_TYPE="wasp"
+MIN_DATA_SAMPLES=1000
+
+MIN_DIPPED_DENSITY=0.3
+MIN_INTERMEDIATE=2
+MAX_INTERMEDIATE=10
+MAX_DIPPED_PERCENT=10
+DIP_RADIUS_PERCENT=2
+PEAK_THRESHOLD=0.6
+MAX_VACANCY_DENSITY=0.008
+DIP_THRESHOLD=0.2
+
+WORKING_DIR=
+
+function show_help {
+    echo ''
+    echo 'waspscandir --start [percent] --end [percent]'
+    echo '            --minsamples [number]'
+    echo '            --min [period days] --max [period days]'
+    echo '            --type [table type within fits]'
+    echo '            --mindd [min dipped density]'
+    echo '            --minint [min intermediate]'
+    echo '            --maxint [max intermediate]'
+    echo '            --maxd [max density percent]'
+    echo '            --diprad [dip radius percent]'
+    echo '            --peak [peak threshold]'
+    echo '            --maxvac [max vacancy density]'
+    echo '            --dir [directory]'
+    echo '            --dip [dip threshold]'
+    echo ''
+    exit 0
+}
+
+while [[ $# > 1 ]]
+do
+key="$1"
+
+case $key in
+    -h|--help)
+    show_help
+    ;;
+    --maxvac)
+    shift
+    MAX_VACANCY_DENSITY="$1"
+    ;;
+    -m|--minsamples)
+    shift
+    MIN_DATA_SAMPLES="$1"
+    ;;
+    -0|--min)
+    shift
+    MIN_PERIOD_DAYS="$1"
+    ;;
+    -1|--max)
+    shift
+    MAX_PERIOD_DAYS="$1"
+    ;;
+    -t|--type)
+    shift
+    TABLE_TYPE="$1"
+    if [[ $TABLE_TYPE != "wasp" ]]; then
+        listname=1
+    fi
+    echo "Type: $TABLE_TYPE"
+    ;;
+    --mindd)
+    shift
+    MIN_DIPPED_DENSITY="$1"
+    ;;
+    --minint)
+    shift
+    MIN_INTERMEDIATE="$1"
+    ;;
+    --maxint)
+    shift
+    MAX_INTERMEDIATE="$1"
+    ;;
+    --maxd)
+    shift
+    MAX_DIPPED_PERCENT="$1"
+    ;;
+    --diprad)
+    shift
+    DIP_RADIUS_PERCENT="$1"
+    ;;
+    --peak)
+    shift
+    PEAK_THRESHOLD="$1"
+    ;;
+    --dip)
+    shift
+    DIP_THRESHOLD="$1"
+    ;;
+    -d|--dir)
+    shift
+    WORKING_DIR=$1
+    ;;
+    *)
+    # unknown option
+    ;;
+esac
+shift
+done
+
+WASP_PARAMS="--min $MIN_PERIOD_DAYS --max $MAX_PERIOD_DAYS --type $TABLE_TYPE --minsamples $MIN_DATA_SAMPLES --peak $PEAK_THRESHOLD --diprad $DIP_RADIUS_PERCENT --maxd $MAX_DIPPED_PERCENT --mindd $MIN_DIPPED_DENSITY --maxint $MAX_INTERMEDIATE --minint $MIN_INTERMEDIATE --maxvac $MAX_VACANCY_DENSITY --dip $DIP_THRESHOLD"
+
+if [ $WORKING_DIR ]; then
+    if [ ! $WORKING_DIR ]; then
+        echo "The directory $WORKING_DIR does not exist"
+        exit 1
+    fi
+    cd $WORKING_DIR
+fi
+
+LOG_FILES=*.tbl
+for f in $LOG_FILES
+do
+    echo "Scanning $f"
+    waspscan -f $f $WASP_PARAMS
+done
+
+LOG_FILES=*.fits
+for f in $LOG_FILES
+do
+    echo "Scanning $f"
+    fits2tbl $f $listname > $f.tbl
+    if [ -f $f.tbl ]; then
+        waspscan -f $f.tbl $WASP_PARAMS
+        rm $f.tbl
+    fi
+done
+
+echo "Done"
+
+exit 0

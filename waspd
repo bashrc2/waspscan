@@ -1,0 +1,232 @@
+#!/bin/bash
+
+#  Copyright (C) 2015-2016 Bob Mottram
+#  bob@robotics.uk.to
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+START_PERCENT=0
+END_PERCENT=100
+MIN_DATA_SAMPLES=1000
+MIN_PERIOD_DAYS=0.5
+MAX_PERIOD_DAYS=4.0
+USERNAME=wasp
+WORKING_DIR=/home/$USERNAME
+FITS_LOG=$WORKING_DIR/fits.log
+STORED_LINE_NO=$WORKING_DIR/line.txt
+listname="PHOTOMETRY"
+TABLE_TYPE="wasp"
+EMAIL_ADDRESS=
+STORE_PATH=
+MIN_FILE_SIZE=2048
+
+MIN_DIPPED_DENSITY=0.3
+MIN_INTERMEDIATE=2
+MAX_INTERMEDIATE=10
+MAX_DIPPED_PERCENT=10
+DIP_RADIUS_PERCENT=2
+PEAK_THRESHOLD=0.6
+MAX_VACANCY_DENSITY=0.008
+DIP_THRESHOLD=0.2
+
+function show_help {
+    echo ''
+    echo 'waspd --start [percent] --end [percent]'
+    echo '      --minsamples [number]'
+    echo '      --min [period days] --max [period days]'
+    echo '      --list [fits file table index name]'
+    echo '      --email [email address]'
+    echo '      --store [path]'
+    echo '      --minfilesize [bytes]'
+    echo ''
+    exit 0
+}
+
+function get_observation_params {
+    # convert the fits wget into an equivalent tbl version
+    tbl_command=$(echo "$1" | sed "s|SWASP |SWASP_|g" | sed "s|FITS|TBL|g" | sed "s|.fits|_lc.tbl|g")
+
+    # wget the tbl file
+    cd $WORKING_DIR
+    eval $tbl_command
+
+    TBL_FILENAME="$WORKING_DIR/$(ls *.tbl | head -n 1)"
+    if [ -f "$TBL_FILENAME" ]; then
+        # if a tbl entry was found then extract the params
+        objname=$(cat $TBL_FILENAME | grep "OBJNAME" | awk -F "'" '{print $2}')
+        RA=$(cat $TBL_FILENAME | grep "RA_OBJ" | awk -F "'" '{print $2}')
+        Dec=$(cat $TBL_FILENAME | grep "DEC_OBJ" | awk -F "'" '{print $2}')
+
+        # save params to a file
+        echo "RA: $RA" > "$WORKING_DIR/candidates/${objname}_params.txt"
+        echo "Dec: $Dec" >> "$WORKING_DIR/candidates/${objname}_params.txt"
+
+        # store the table
+        mv *.tbl $WORKING_DIR/candidates
+    fi
+}
+
+while [[ $# > 1 ]]
+do
+key="$1"
+
+case $key in
+    -h|--help)
+    show_help
+    ;;
+    -0|--min)
+    shift
+    MIN_PERIOD_DAYS="$1"
+    ;;
+    -m|--minsamples)
+    shift
+    MIN_DATA_SAMPLES="$1"
+    ;;
+    -1|--max)
+    shift
+    MAX_PERIOD_DAYS="$1"
+    ;;
+    -s|--start)
+    shift
+    START_PERCENT="$1"
+    ;;
+    -e|--end)
+    shift
+    END_PERCENT="$1"
+    ;;
+    -l|--list)
+    shift
+    listname="$1"
+    ;;
+    -t|--type)
+    shift
+    TABLE_TYPE="$1"
+    ;;
+    --log)
+    shift
+    FITS_LOG="$1"
+    ;;
+    --email)
+    shift
+    EMAIL_ADDRESS="$1"
+    ;;
+    --store)
+    shift
+    STORE_PATH="$1"
+    ;;
+    --minfilesize)
+    shift
+    MIN_FILE_SIZE=$1
+    ;;
+    *)
+    # unknown option
+    ;;
+esac
+shift
+done
+
+if [ ! -f $FITS_LOG ]; then
+    print "Log file not found  $FITS_LOG"
+    exit 3425
+fi
+
+NO_OF_FILES=$(cat $FITS_LOG | wc -l)
+
+# starting and ending line in the log file
+START_FILE_INDEX=$(($NO_OF_FILES * $START_PERCENT / 100))
+END_FILE_INDEX=$(($NO_OF_FILES * $END_PERCENT / 100))
+
+# Search between line numbers
+LINE_NO=$START_FILE_INDEX
+if [ -f $STORED_LINE_NO ]; then
+    LINE_NO=$(cat $STORED_LINE_NO)
+fi
+
+# create a directory for candidates
+if [ ! -d $WORKING_DIR/candidates ]; then
+    mkdir $WORKING_DIR/candidates
+fi
+
+# create store path if needed
+if [ ${#STORE_PATH} -gt 1 ]; then
+    if [ ! -d $STORE_PATH ]; then
+        mkdir -p $STORE_PATH
+    fi
+fi
+
+while [  $LINE_NO -lt $END_FILE_INDEX ]; do
+    if ls $WORKING_DIR/*.fits 1> /dev/null 2>&1; then
+        rm -f $WORKING_DIR/*.fits
+    fi
+    if ls $WORKING_DIR/*.png 1> /dev/null 2>&1; then
+        mv *.png $WORKING_DIR/candidates
+    fi
+
+    # extract the line from the log file
+    COMMAND=$(sed "${LINE_NO}q;d" $FITS_LOG)
+
+    # wget the fits file
+    cd $WORKING_DIR
+    eval $COMMAND
+
+    FITS_FILENAME="$WORKING_DIR/$(ls *.fits | head -n 1)"
+    if [ -f "$FITS_FILENAME" ]; then
+
+        # convert to table format
+        fits2tbl "$FITS_FILENAME" $listname > "$FITS_FILENAME.tbl"
+        if [ -f "$FITS_FILENAME.tbl" ]; then
+            # scan table for transits
+            waspscan -f "$FITS_FILENAME.tbl" --min $MIN_PERIOD_DAYS --max $MAX_PERIOD_DAYS --type $TABLE_TYPE --minsamples $MIN_DATA_SAMPLES --peak $PEAK_THRESHOLD --diprad $DIP_RADIUS_PERCENT --maxd $MAX_DIPPED_PERCENT --mindd $MIN_DIPPED_DENSITY --maxint $MAX_INTERMEDIATE --minint $MIN_INTERMEDIATE --maxvac $MAX_VACANCY_DENSITY --dip $DIP_THRESHOLD
+            echo "$FITS_FILENAME" >> $WORKING_DIR/searched.log
+
+            # optionally store the data
+            if [ ${#STORE_PATH} -gt 1 ]; then
+                if [ -d $STORE_PATH ]; then
+                    filesize=$(wc -c <"$FITS_FILENAME.tbl")
+                    if [ $filesize -ge $MIN_FILE_SIZE ]; then
+                        cp *.tbl $STORE_PATH
+                    fi
+                fi
+            fi
+
+            if ls $WORKING_DIR/*.png 1> /dev/null 2>&1; then
+                mv *.png $WORKING_DIR/candidates
+                mv *.tbl $WORKING_DIR/candidates
+
+                get_observation_params "$COMMAND"
+
+                # optionally send a notification email
+                if [ $EMAIL_ADDRESS ]; then
+                    echo "$FITS_FILENAME" | mail -s "waspd: Candidate transit" $EMAIL_ADDRESS
+                fi
+            else
+                rm -f "$FITS_FILENAME.tbl"
+            fi
+        fi
+        rm -f "$FITS_FILENAME"
+    fi
+
+    # remember the line number so that it's
+    # possible to resume
+    echo "$LINE_NO" > $STORED_LINE_NO
+
+    # move to the next line
+    let LINE_NO=LINE_NO+1
+done
+
+if [ $EMAIL_ADDRESS ]; then
+    echo "$(ls $WORKING_DIR/candidates)" | mail -s "waspd search completed" $EMAIL_ADDRESS
+fi
+
+exit 0
