@@ -50,14 +50,14 @@ int main(int argc, char* argv[])
     int endpoints[MAX_SERIES_LENGTH];
     int no_of_sections;
     char log_filename[256];
-    char name[256], title[256];
+    char name[256], title[256*2];
     float orbital_period_days;
     int minimum_data_samples = 1000;
     float minimum_period_days = 0;
     float maximum_period_days = 0;
     float known_period_days = 0;
-    char light_curve_filename[256];
-    char light_curve_distribution_filename[256];
+    char light_curve_filename[256*2];
+    char light_curve_distribution_filename[256*2];
     int table_type = TABLE_TYPE_WASP;
     int time_field_index=0, flux_field_index=3;
     float vertical_scale = 1.0f;
