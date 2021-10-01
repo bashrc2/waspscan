@@ -13,7 +13,7 @@ Installation
 ------------
 Installation is pretty conventional:
 
-    sudo apt-get install build-essential gnuplot python-astropy
+    sudo apt-get install build-essential gnuplot python3-astropy
     make
     sudo make install
 
