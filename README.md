@@ -1,6 +1,6 @@
 WASPscan
 ========
-<img src="https://github.com/bashrc/WASPscan/blob/master/images/J233415.png?raw=true" width=640/>
+![Example light curve J233415](images/J233415.png)
 
 This utility takes log files produced by SuperWASP and searches for exoplanet transits within them, producing plots if any are found. A range of possible orbital periods can be given, or if the period is already known then that can be specified.
 
