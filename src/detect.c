@@ -45,13 +45,13 @@ int detect_endpoints(float timestamp[], int series_length,
 
     for (i = 1; i < series_length; i++)
         av_dt += timestamp[i] - timestamp[i-1];
-    av_dt /= (series_length-1);
+    av_dt /= (float)(series_length-1);
 
     for (i = 1; i < series_length; i++) {
         variance = (timestamp[i] - timestamp[i-1]) - av_dt;
         dt_variance += variance*variance;
     }
-    dt_variance = (float)sqrt(dt_variance/(series_length-1));
+    dt_variance = (float)sqrt(dt_variance/(float)(series_length-1));
     threshold = dt_variance*10;
 
     for (i = 1; i < series_length-1; i++) {
@@ -87,7 +87,7 @@ static float light_curve_variance(float period_days,
         index = (int)(fmod(days,period_days) * mult);
         variance += (series[i] - curve[index])*(series[i] - curve[index]);
     }
-    return (float)sqrt(variance/series_length);
+    return (float)sqrt(variance/(float)series_length);
 }
 
 /**
@@ -157,14 +157,14 @@ static float dip_vacancy(int start_index, int end_index,
     /* get the average magnitude */
     for (i = curve_length-1; i >= 0; i--) curve_average_mag += curve[i];
     memset(den,0,curve_length*sizeof(float));
-    curve_average_mag /= curve_length;
+    curve_average_mag /= (float)curve_length;
 
     /* get the variance */
     for (i = curve_length-1; i >= 0; i--)
         curve_variance +=
             (curve[i] - curve_average_mag)*(curve[i] - curve_average_mag);
 
-    curve_variance = (float)sqrt(curve_variance / curve_length);
+    curve_variance = (float)sqrt(curve_variance / (float)curve_length);
     min_curve_mag = curve_average_mag - (curve_variance*2.0f);
 
     /* find the number of points within the dip region which are
@@ -251,7 +251,7 @@ float detect_av(float series[], int series_length)
     double av = 0;
 
     for (i = series_length-1; i >= 0; i--) av += series[i];
-    return (float)(av/series_length);
+    return (float)(av/(float)series_length);
 }
 
 /**
@@ -269,7 +269,7 @@ float detect_variance(float series[], int series_length, float av)
     for (i = series_length-1; i >= 0; i--)
         variance += (series[i] - av)*(series[i] - av);
 
-    return (float)sqrt(variance/series_length);
+    return (float)sqrt(variance/(float)series_length);
 }
 
 /**
@@ -463,7 +463,7 @@ float detect_orbital_period(float timestamp[],
             response[step] = 0;
             continue;
         }
-        av /= hits;
+        av /= (float)hits;
 
         /* average density of samples */
         float av_density = 0;
@@ -473,7 +473,7 @@ float detect_orbital_period(float timestamp[],
             av_density += density[j];
             hits++;
         }
-        av_density /= hits;
+        av_density /= (float)hits;
 
         /* variation in the density of samples */
         float density_variance = 0;
@@ -486,7 +486,7 @@ float detect_orbital_period(float timestamp[],
                 hits++;
             }
         }
-        density_variance = (float)(density_variance / hits);
+        density_variance = (float)(density_variance / (float)hits);
 
         /* find the minimum */
         float minimum = 0;
@@ -555,7 +555,7 @@ float detect_orbital_period(float timestamp[],
             response[step] = 0;
             continue;
         }
-        dipped_density /= dipped;
+        dipped_density /= (float)dipped;
         if (dipped_density < min_dipped_density) {
             response[step] = 0;
             continue;
