@@ -66,32 +66,6 @@ int detect_endpoints(float timestamp[], int series_length,
     return ctr;
 }
 
-/**
- * @brief Calculates the amount of variance for a light curve
- * @param period_days Orbital period in days
- * @param timestamp
- * @param series Time series array containing magnitudes
- * @param series_length The length of the data series
- * @param curve Returned light curve Array
- * @param curve_length The number of buckets within the curve
- */
-static float light_curve_variance(float period_days,
-                                  float timestamp[],
-                                  float series[],
-                                  int series_length,
-                                  float curve[], int curve_length)
-{
-    int i, index;
-    float days, variance = 0;
-    float mult = (float)curve_length / period_days;
-
-    for (i = series_length-1; i >= 0; i--) {
-        days = timestamp[i] * DAY_SECONDS;
-        index = (int)(fmod(days,period_days) * mult);
-        variance += (series[i] - curve[index])*(series[i] - curve[index]);
-    }
-    return (float)sqrt(variance/(float)series_length);
-}
 
 /**
  * @brief Returns an array containing a light curve for the given orbital period_days
@@ -290,6 +264,7 @@ float detect_variance(float series[], int series_length, float av)
     return (float)sqrt(variance/(float)series_length);
 }
 
+
 /**
  * @brief returns the number of buckets within a light curve for
  *        which no data exists
@@ -308,7 +283,8 @@ int missing_data(float density[], int curve_length)
 }
 
 /**
- * @brief Returns an array containing a light curve for the given orbital period_days
+ * @brief Returns an array containing a light curve for the given
+ *        orbital period_days
  * @param timestamp Array of imaging times
  * @param series Array containing magnitudes
  * @param series_length The length of the data series
@@ -466,12 +442,6 @@ float detect_orbital_period(float timestamp[],
                         curve, density, DETECT_CURVE_LENGTH) != 0)
             continue;
 
-        float variance =
-            light_curve_variance(orbital_period_days,
-                                 timestamp, series,
-                                 series_length,
-                                 curve, DETECT_CURVE_LENGTH);
-
         /* calculate the av */
         float av = 0;
         int hits = 0;
@@ -607,21 +577,40 @@ float detect_orbital_period(float timestamp[],
             continue;
         }
 
-        variance = 0;
+        /* variance of the averaged light curve from average */
+        float variance_value = 0;
+        float variance_min = 0;
+        float variance_max = 0;
+        float variance_diff = 1.0f;
         hits = 0;
         for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
-            if (curve[j] > 0) {
-                variance += (curve[j] - av)*(curve[j] - av);
-                hits++;
+            if (curve[j] <= 0) continue;
+            variance_value = (curve[j] - av)*(curve[j] - av);
+            if (variance_value > 0) {
+                if (variance_min != 0) {
+                    if (variance_value < variance_min)
+                        variance_min = variance_value;
+                }
+                else
+                    variance_min = variance_value;
+                if (variance_max != 0) {
+                    if (variance_value > variance_max)
+                        variance_max = variance_value;
+                }
+                else
+                    variance_max = variance_value;
             }
+            hits++;
         }
+
         response[step] = 0;
-        if (hits > 0) {
-            response[step] =
-                (av-minimum) / (float)sqrt(variance/(float)hits);
+        if ((hits > 0) && (variance_max > variance_min)) {
+            density_variance = 1.0f + density_variance;
+            variance_diff = 1.0f + ((variance_max - variance_min));
+
             response[step] =
                 (av-minimum)*(float)dipped*100.0f/(av*(float)(1+nondipped));
-            response[step] /= (density_variance*variance);
+            response[step] /= (density_variance*variance_diff);
 
             /* check the density within the area of the dip which
                is expected to be vacant */
