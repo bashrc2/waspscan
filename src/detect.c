@@ -105,10 +105,8 @@ static void light_curve_base(float timestamp[],
     int i, index;
     float days, max_samples=0;
 
-    for (i = 0; i < curve_length; i++) {
-        curve[i] = 0;
-        density[i] = 0;
-    }
+    memset(curve,0,curve_length*sizeof(float));
+    memset(density,0,curve_length*sizeof(float));
 
     for (i = 0; i < series_length; i++) {
         days = timestamp[i] / (60.0f*60.0f*24.0f);
@@ -222,10 +220,8 @@ static void light_curve_resample(float min_value, float max_value,
     float days;
     int hits[512];
 
-    for (i = 0; i < curve_length; i++) {
-        curve[i] = 0;
-        hits[i] = 0;
-    }
+    memset(curve,0,curve_length*sizeof(float));
+    memset(hits,0,curve_length*sizeof(int));
 
     for (i = 0; i < series_length; i++) {
         if ((series[i] < min_value) ||
