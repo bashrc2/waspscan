@@ -5,11 +5,11 @@ ARCH_TYPE=`uname -m`
 .PHONY: check-syntax
 
 all:
-	gcc -Wall -std=gnu99 -pedantic -O3 -o ${APP} src/*.c -Isrc -lm -fopenmp
+	gcc -Wall -std=gnu18 -pedantic -O3 -o ${APP} src/*.c -Isrc -lm -fopenmp
 check-syntax:
-	gcc -Wall -std=gnu99 -pedantic -O3 -o ${APP} src/*.c -Isrc -lm -fopenmp -fsyntax-only
+	gcc -Wall -std=gnu18 -pedantic -O3 -o ${APP} src/*.c -Isrc -lm -fopenmp -fsyntax-only
 debug:
-	gcc -Wall -std=gnu99 -pedantic -g -o ${APP} src/*.c -Isrc -lm -fopenmp
+	gcc -Wall -std=gnu18 -pedantic -g -o ${APP} src/*.c -Isrc -lm -fopenmp
 source:
 	tar -cvzf ../${APP}_${VERSION}.orig.tar.gz ../${APP}-${VERSION} --exclude-vcs
 install:
