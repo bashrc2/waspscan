@@ -111,20 +111,19 @@ static void light_curve_base(float timestamp[],
     memset(curve,0,curve_length*sizeof(float));
     memset(density,0,curve_length*sizeof(float));
 
-    for (i = 0; i < series_length; i++) {
+    for (i = series_length-1; i >= 0; i--) {
         days = timestamp[i] / DAY_SECONDS;
         index = (int)(fmod(days,period_days) * curve_length / period_days);
         curve[index] += series[i];
         density[index]++;
     }
 
-    for (i = 0; i < curve_length; i++) {
-        if (density[i] > 0) {
+    for (i = curve_length-1; i >= 0; i--) {
+        if (density[i] > 0)
             curve[i] /= density[i];
-        }
-        if (density[i] > max_samples) {
+
+        if (density[i] > max_samples)
             max_samples = density[i];
-        }
     }
 
     /* normalise */
