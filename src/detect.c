@@ -232,12 +232,10 @@ static void light_curve_resample(float min_value, float max_value,
         if (curve[i] > 0) curve[i] /= hits[i];
 
     /* fill any holes */
-    for (i = 0; i < curve_length; i++) {
+    curve[0] = curve[curve_length-1];
+    for (i = 1; i < curve_length; i++) {
         if (curve[i] != 0) continue;
-        if (i > 0)
-            curve[i] = curve[i-1];
-        else
-            curve[i] = curve[curve_length-1];
+	curve[i] = curve[i-1];
     }
 }
 
