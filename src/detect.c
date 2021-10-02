@@ -19,7 +19,7 @@
 #include "waspscan.h"
 
 /* length of the light curve used for transit detection */
-#define DETECT_CURVE_LENGTH 256
+#define DETECT_CURVE_LENGTH 128
 
 /* maximum percentage of the light curve which may be missing */
 #define MISSING_THRESHOLD   0
@@ -108,7 +108,7 @@ static void light_curve_base(float timestamp[],
                              float period_days,
                              float curve[], float density[], int curve_length)
 {
-    int i, index;
+    int i, index, prev_index, next_index;
     float days, max_samples=0;
     float mult = (float)curve_length / period_days;
 
@@ -118,8 +118,18 @@ static void light_curve_base(float timestamp[],
     for (i = series_length-1; i >= 0; i--) {
         days = timestamp[i] * DAY_SECONDS;
         index = (int)(fmod(days,period_days) * mult);
-        curve[index] += series[i];
-        density[index]++;
+        curve[index] += series[i]*2;
+        density[index] += 2;
+
+        prev_index = index - 1;
+        if (prev_index < 0) prev_index += curve_length;
+        curve[prev_index] += series[i];
+        density[prev_index]++;
+
+        next_index = index + 1;
+        if (next_index >= curve_length) next_index -= curve_length;
+        curve[next_index] += series[i];
+        density[next_index]++;
     }
 
     for (i = curve_length-1; i >= 0; i--) {
@@ -210,7 +220,7 @@ static void light_curve_resample(float min_value, float max_value,
                                  float period_days,
                                  float curve[], int curve_length)
 {
-    int i, index;
+    int i, index, prev_index, next_index;
     float days;
     int hits[512];
     float mult = (float)curve_length / period_days;
@@ -222,8 +232,18 @@ static void light_curve_resample(float min_value, float max_value,
         if ((series[i] < min_value) || (series[i] > max_value)) continue;
         days = timestamp[i] * DAY_SECONDS;
         index = (int)(fmod(days,period_days) * mult);
-        curve[index] += series[i];
-        hits[index]++;
+        curve[index] += series[i]*2;
+        hits[index] += 2;
+
+        prev_index = index - 1;
+        if (prev_index < 0) prev_index += curve_length;
+        curve[prev_index] += series[i];
+        hits[prev_index]++;
+
+        next_index = index + 1;
+        if (next_index >= curve_length) next_index -= curve_length;
+        curve[next_index] += series[i];
+        hits[next_index]++;
     }
 
     for (i = curve_length-1; i >= 0; i--)
@@ -305,6 +325,7 @@ int light_curve(float timestamp[],
 {
     float av, variance;
 
+    /* bucket the samples into a light curve with a discreet length */
     light_curve_base(timestamp, series, series_length,
                      period_days, curve, density, curve_length);
 
@@ -312,7 +333,10 @@ int light_curve(float timestamp[],
         MISSING_THRESHOLD)
         return -1;
 
+    /* get the average magnitude */
     av = detect_av(series, series_length);
+
+    /* rms variance from the average magnitude */
     variance = detect_variance(series, series_length, av);
 
     light_curve_resample(av - variance, av + variance,
