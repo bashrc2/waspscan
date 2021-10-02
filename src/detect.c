@@ -455,8 +455,8 @@ float detect_orbital_period(float timestamp[],
         /* calculate the mean */
         float mean = 0;
         int hits = 0;
-        for (int j = 0; j < DETECT_CURVE_LENGTH; j++) {
-            if (curve[j]>0) {
+        for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
+            if (curve[j] > 0) {
                 mean += curve[j];
                 hits++;
             }
@@ -471,7 +471,7 @@ float detect_orbital_period(float timestamp[],
         /* average density of samples */
         float mean_density = 0;
         hits = 0;
-        for (int j = 0; j < DETECT_CURVE_LENGTH; j++) {
+        for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
             if (density[j] > 0) {
                 mean_density += density[j];
                 hits++;
@@ -482,7 +482,7 @@ float detect_orbital_period(float timestamp[],
         /* variation in the density of samples */
         float density_variance = 0;
         hits = 0;
-        for (int j = 0; j < DETECT_CURVE_LENGTH; j++) {
+        for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
             if (density[j] > 0) {
                 density_variance +=
                     (density[j] - mean_density)*
@@ -570,7 +570,7 @@ float detect_orbital_period(float timestamp[],
         /* peaks above the mean are an indicator that this isn't a transit  */
         int peaked = 0;
         float threshold_peaked = mean + ((mean-minimum)*peak_threshold);
-        for (int j = 0; j < DETECT_CURVE_LENGTH; j++) {
+        for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
             if (curve[j] > threshold_peaked) {
                 peaked++;
                 break;
@@ -584,7 +584,7 @@ float detect_orbital_period(float timestamp[],
         /* How much difference from the mean? */
         int nondipped = 0;
         float threshold_upper = mean - ((mean-minimum)*0.2);
-        for (int j = 0; j < DETECT_CURVE_LENGTH; j++) {
+        for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
             if ((curve[j] < threshold_upper) &&
                 (curve[j] > threshold_dipped)) {
                 nondipped++;
@@ -601,7 +601,7 @@ float detect_orbital_period(float timestamp[],
 
         variance = 0;
         hits = 0;
-        for (int j = 0; j < DETECT_CURVE_LENGTH; j++) {
+        for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
             if (curve[j] > 0) {
                 variance += (curve[j] - mean)*(curve[j] - mean);
                 hits++;
@@ -634,7 +634,7 @@ float detect_orbital_period(float timestamp[],
         }
     }
 
-    for (int i = 0; i < steps; i++) {
+    for (int i = steps-1; i >= 0; i--) {
         if (response[i] > max_response) {
             max_response = response[i];
             period_days = min_period_days + (i*increment_days);
