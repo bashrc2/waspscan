@@ -174,9 +174,7 @@ static float dip_vacancy(int start_index, int end_index,
         index = (int)(fmod(days,period_days) * mult);
         den[index]++;
         if ((index >= start_index) && (index < end_index)) {
-            if (series[i] > min_curve_mag) {
-                density++;
-            }
+            if (series[i] > min_curve_mag) density++;
         }
     }
 
@@ -235,7 +233,7 @@ static void light_curve_resample(float min_value, float max_value,
     curve[0] = curve[curve_length-1];
     for (i = 1; i < curve_length; i++) {
         if (curve[i] != 0) continue;
-	curve[i] = curve[i-1];
+        curve[i] = curve[i-1];
     }
 }
 
@@ -497,20 +495,17 @@ float detect_orbital_period(float timestamp[],
                 int l = k;
                 if (l < 0) l += DETECT_CURVE_LENGTH;
                 if (l >= DETECT_CURVE_LENGTH) l -= DETECT_CURVE_LENGTH;
-                if (curve[l] > 0) {
+                if (curve[l] <= 0) continue;
+                v += curve[l];
+                hits++;
+                if (k == j) {
                     v += curve[l];
                     hits++;
-                    if (k == j) {
-                        v += curve[l];
-                        hits++;
-                    }
                 }
             }
             if (hits > 0) {
-                v /= hits;
-                if ((v < minimum) || (minimum == 0)) {
-                    minimum = v;
-                }
+                v /= (float)hits;
+                if ((v < minimum) || (minimum == 0)) minimum = v;
             }
         }
 
@@ -523,15 +518,12 @@ float detect_orbital_period(float timestamp[],
         float dipped_density = 0;
         float threshold_dipped = minimum + ((av-minimum)*dip_threshold);
         for (int j = 0; j < DETECT_CURVE_LENGTH; j++) {
-            if (curve[j] < threshold_dipped) {
-                if (start_index == -1) start_index = j;
-                end_index = j;
-                dipped++;
-                if (dipped > max_dipped) {
-                    break;
-                }
-                dipped_density += density[j];
-            }
+            if (curve[j] >= threshold_dipped) continue;
+            if (start_index == -1) start_index = j;
+            end_index = j;
+            dipped++;
+            if (dipped > max_dipped) break;
+            dipped_density += density[j];
         }
 
         /* there should be a beginning and end to the dipped area */
@@ -604,9 +596,9 @@ float detect_orbital_period(float timestamp[],
         response[step] = 0;
         if (hits > 0) {
             response[step] =
-	        (av-minimum) / (float)sqrt(variance/(float)hits);
+                (av-minimum) / (float)sqrt(variance/(float)hits);
             response[step] =
-	        (av-minimum)*(float)dipped*100.0f/(av*(float)(1+nondipped));
+                (av-minimum)*(float)dipped*100.0f/(av*(float)(1+nondipped));
             response[step] /= (density_variance*variance);
 
             /* check the density within the area of the dip which
