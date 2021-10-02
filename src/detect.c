@@ -171,7 +171,7 @@ static float dip_vacancy(int start_index, int end_index,
 
     /* find the number of points within the dip region which are
        within the expected vacancy area */
-    for (i = 0; i < series_length; i++) {
+    for (i = series_length-1; i >= 0; i--) {
         days = timestamp[i] / DAY_SECONDS;
         index = (int)(fmod(days,period_days) * curve_length / period_days);
         den[index]++;
@@ -183,15 +183,11 @@ static float dip_vacancy(int start_index, int end_index,
     }
 
     /* get the maximum density samples */
-    for (i = 0; i < curve_length; i++) {
-        if (den[i] > max_samples) {
-            max_samples = den[i];
-        }
-    }
+    for (i = curve_length-1; i >= 0; i--)
+        if (den[i] > max_samples) max_samples = den[i];
 
-    if (max_samples > 0) {
+    if (max_samples > 0)
         return density / (max_samples * ((end_index - start_index)+1));
-    }
     return 1.0;
 }
 
