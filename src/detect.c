@@ -25,7 +25,7 @@
 #define MISSING_THRESHOLD   0
 
 /* number of seconds in a day */
-#define DAY_SECONDS (60.0f*60.0f*24.0f)
+#define DAY_SECONDS (1.0f / (60.0f*60.0f*24.0f))
 
 /**
  * @brief Detects the starting and ending indexes of active
@@ -83,7 +83,7 @@ static float light_curve_variance(float period_days,
     float days, variance = 0;
 
     for (i = series_length-1; i >= 0; i--) {
-        days = timestamp[i] / DAY_SECONDS;
+        days = timestamp[i] * DAY_SECONDS;
         index = (int)(fmod(days,period_days) * curve_length / period_days);
         variance += (series[i] - curve[index])*(series[i] - curve[index]);
     }
@@ -112,7 +112,7 @@ static void light_curve_base(float timestamp[],
     memset(density,0,curve_length*sizeof(float));
 
     for (i = series_length-1; i >= 0; i--) {
-        days = timestamp[i] / DAY_SECONDS;
+        days = timestamp[i] * DAY_SECONDS;
         index = (int)(fmod(days,period_days) * curve_length / period_days);
         curve[index] += series[i];
         density[index]++;
@@ -172,7 +172,7 @@ static float dip_vacancy(int start_index, int end_index,
     /* find the number of points within the dip region which are
        within the expected vacancy area */
     for (i = series_length-1; i >= 0; i--) {
-        days = timestamp[i] / DAY_SECONDS;
+        days = timestamp[i] * DAY_SECONDS;
         index = (int)(fmod(days,period_days) * curve_length / period_days);
         den[index]++;
         if ((index >= start_index) && (index < end_index)) {
@@ -223,7 +223,7 @@ static void light_curve_resample(float min_value, float max_value,
             (series[i] > max_value)) {
             continue;
         }
-        days = timestamp[i] / DAY_SECONDS;
+        days = timestamp[i] * DAY_SECONDS;
         index = (int)(fmod(days,period_days) * curve_length / period_days);
         curve[index] += series[i];
         hits[index]++;
