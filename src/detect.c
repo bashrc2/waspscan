@@ -256,9 +256,7 @@ float detect_mean(float series[], int series_length)
     int i;
     double mean = 0;
 
-    for (i = 0; i < series_length; i++) {
-        mean += series[i];
-    }
+    for (i = series_length-1; i >= 0; i--) mean += series[i];
     return (float)(mean/series_length);
 }
 
@@ -274,9 +272,9 @@ float detect_variance(float series[], int series_length, float mean)
     int i;
     double variance = 0;
 
-    for (i = 0; i < series_length; i++) {
+    for (i = series_length-1; i >= 0; i--)
         variance += (series[i] - mean)*(series[i] - mean);
-    }
+
     return (float)sqrt(variance/series_length);
 }
 
@@ -291,9 +289,9 @@ int missing_data(float density[], int curve_length)
 {
     int i, missing = 0;
 
-    for (i = 0; i < curve_length; i++) {
+    for (i = curve_length-1; i >= 0; i--)
         if (density[i] == 0) missing++;
-    }
+
     return missing;
 }
 
@@ -377,9 +375,8 @@ void adjust_curve(float curve[], int curve_length, int offset)
         if (index >= curve_length) index -= curve_length;
         new_curve[index] = curve[i];
     }
-    for (i = 0; i < curve_length; i++) {
-        curve[i] = new_curve[i];
-    }
+
+    memcpy(curve,new_curve,curve_length*sizeof(float));
 }
 
 /**
