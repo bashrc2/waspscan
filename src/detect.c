@@ -107,13 +107,14 @@ static void light_curve_base(float timestamp[],
 {
     int i, index;
     float days, max_samples=0;
+    float mult = (float)curve_length / period_days;
 
     memset(curve,0,curve_length*sizeof(float));
     memset(density,0,curve_length*sizeof(float));
 
     for (i = series_length-1; i >= 0; i--) {
         days = timestamp[i] * DAY_SECONDS;
-        index = (int)(fmod(days,period_days) * curve_length / period_days);
+        index = (int)(fmod(days,period_days) * mult);
         curve[index] += series[i];
         density[index]++;
     }
@@ -155,6 +156,7 @@ static float dip_vacancy(int start_index, int end_index,
     float density = 0, curve_average_mag = 0;
     float curve_variance = 0, min_curve_mag;
     float den[DETECT_CURVE_LENGTH];
+    float mult = (float)curve_length / period_days;
 
     /* get the average magnitude */
     for (i = curve_length-1; i >= 0; i--) curve_average_mag += curve[i];
@@ -173,7 +175,7 @@ static float dip_vacancy(int start_index, int end_index,
        within the expected vacancy area */
     for (i = series_length-1; i >= 0; i--) {
         days = timestamp[i] * DAY_SECONDS;
-        index = (int)(fmod(days,period_days) * curve_length / period_days);
+        index = (int)(fmod(days,period_days) * mult);
         den[index]++;
         if ((index >= start_index) && (index < end_index)) {
             if (series[i] > min_curve_mag) {
@@ -214,6 +216,7 @@ static void light_curve_resample(float min_value, float max_value,
     int i, index;
     float days;
     int hits[512];
+    float mult = (float)curve_length / period_days;
 
     memset(curve,0,curve_length*sizeof(float));
     memset(hits,0,curve_length*sizeof(int));
@@ -224,7 +227,7 @@ static void light_curve_resample(float min_value, float max_value,
             continue;
         }
         days = timestamp[i] * DAY_SECONDS;
-        index = (int)(fmod(days,period_days) * curve_length / period_days);
+        index = (int)(fmod(days,period_days) * mult);
         curve[index] += series[i];
         hits[index]++;
     }
