@@ -81,10 +81,11 @@ static float light_curve_variance(float period_days,
 {
     int i, index;
     float days, variance = 0;
+    float mult = (float)curve_length / period_days;
 
     for (i = series_length-1; i >= 0; i--) {
         days = timestamp[i] * DAY_SECONDS;
-        index = (int)(fmod(days,period_days) * curve_length / period_days);
+        index = (int)(fmod(days,period_days) * mult);
         variance += (series[i] - curve[index])*(series[i] - curve[index]);
     }
     return (float)sqrt(variance/series_length);
@@ -120,16 +121,12 @@ static void light_curve_base(float timestamp[],
     }
 
     for (i = curve_length-1; i >= 0; i--) {
-        if (density[i] > 0)
-            curve[i] /= density[i];
-
-        if (density[i] > max_samples)
-            max_samples = density[i];
+        if (density[i] > 0) curve[i] /= density[i];
+        if (density[i] > max_samples) max_samples = density[i];
     }
 
     /* normalise */
-    for (i = curve_length-1; i >= 0; i--)
-        density[i] /= max_samples;
+    for (i = curve_length-1; i >= 0; i--) density[i] /= max_samples;
 }
 
 /**
@@ -424,10 +421,13 @@ float detect_orbital_period(float timestamp[],
 {
     float period_days=0;
     float max_response = 0;
-    int expected_width = (int)(DETECT_CURVE_LENGTH*expected_dip_radius_percent/100.0f);
+    int expected_width =
+        (int)(DETECT_CURVE_LENGTH*expected_dip_radius_percent/100.0f);
     int max_dipped = (int)(DETECT_CURVE_LENGTH*max_dipped_percent/100.0f);
-    int max_intermediates = (int)(DETECT_CURVE_LENGTH*max_intermediate_percent/100.0f);
-    int min_intermediates = (int)(DETECT_CURVE_LENGTH*min_intermediate_percent/100.0f);
+    int max_intermediates =
+        (int)(DETECT_CURVE_LENGTH*max_intermediate_percent/100.0f);
+    int min_intermediates =
+        (int)(DETECT_CURVE_LENGTH*min_intermediate_percent/100.0f);
     int step = 0;
     int steps = (int)((max_period_days - min_period_days)/increment_days);
     float response[MAX_SEARCH_STEPS];
