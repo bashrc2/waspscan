@@ -38,8 +38,8 @@
 #define TABLE_TYPE_WASP 0
 #define TABLE_TYPE_K2   1
 
-float detect_mean(float series[], int series_length);
-float detect_variance(float series[], int series_length, float mean);
+float detect_av(float series[], int series_length);
+float detect_variance(float series[], int series_length, float av);
 int logfile_load(char * filename, float timestamp[],
                  float series[], int max_series_length,
                  int time_field_index, int flux_field_index);

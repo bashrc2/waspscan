@@ -40,15 +40,15 @@ int detect_endpoints(float timestamp[], int series_length,
 {
     int start_index = 0;
     float variance;
-    float threshold, dt, mean_dt = 0, dt_variance = 0;
+    float threshold, dt, av_dt = 0, dt_variance = 0;
     int i,ctr=0;
 
     for (i = 1; i < series_length; i++)
-        mean_dt += timestamp[i] - timestamp[i-1];
-    mean_dt /= (series_length-1);
+        av_dt += timestamp[i] - timestamp[i-1];
+    av_dt /= (series_length-1);
 
     for (i = 1; i < series_length; i++) {
-        variance = (timestamp[i] - timestamp[i-1]) - mean_dt;
+        variance = (timestamp[i] - timestamp[i-1]) - av_dt;
         dt_variance += variance*variance;
     }
     dt_variance = (float)sqrt(dt_variance/(series_length-1));
@@ -250,29 +250,29 @@ static void light_curve_resample(float min_value, float max_value,
  * @param series_length Length of the array
  * @returns Average value
  */
-float detect_mean(float series[], int series_length)
+float detect_av(float series[], int series_length)
 {
     int i;
-    double mean = 0;
+    double av = 0;
 
-    for (i = series_length-1; i >= 0; i--) mean += series[i];
-    return (float)(mean/series_length);
+    for (i = series_length-1; i >= 0; i--) av += series[i];
+    return (float)(av/series_length);
 }
 
 /**
  * @brief Returns the variance for all data points in a series
  * @param series Array containing data points
  * @param series_length Length of the Array
- * @param mean Pre-calculated mean value
+ * @param av Pre-calculated av value
  * @returns Variance value
  */
-float detect_variance(float series[], int series_length, float mean)
+float detect_variance(float series[], int series_length, float av)
 {
     int i;
     double variance = 0;
 
     for (i = series_length-1; i >= 0; i--)
-        variance += (series[i] - mean)*(series[i] - mean);
+        variance += (series[i] - av)*(series[i] - av);
 
     return (float)sqrt(variance/series_length);
 }
@@ -310,7 +310,7 @@ int light_curve(float timestamp[],
                 float period_days,
                 float curve[], float density[], int curve_length)
 {
-    float mean, variance;
+    float av, variance;
 
     light_curve_base(timestamp, series, series_length,
                      period_days, curve, density, curve_length);
@@ -319,10 +319,10 @@ int light_curve(float timestamp[],
         MISSING_THRESHOLD)
         return -1;
 
-    mean = detect_mean(series, series_length);
-    variance = detect_variance(series, series_length, mean);
+    av = detect_av(series, series_length);
+    variance = detect_variance(series, series_length, av);
 
-    light_curve_resample(mean - variance, mean + variance,
+    light_curve_resample(av - variance, av + variance,
                          timestamp, series, series_length,
                          period_days, curve, curve_length);
     return 0;
@@ -397,7 +397,7 @@ void adjust_curve(float curve[], int curve_length, int offset)
  *                                  dipped and non-dipped
  * @params expected_dip_radius_percent Expected dip radius as a percentage of
  *                                     the orbital period
- * @params peak_threshold Threshold above the mean beyond which to disguard the curve
+ * @params peak_threshold Threshold above the av beyond which to disguard the curve
  * @params max_vacancy_density Maximum density within the area of the dip
  *                             expected to be vacant
  * @params dip_threshold A threshold above which the profile will be considered to
@@ -454,12 +454,12 @@ float detect_orbital_period(float timestamp[],
                                  series_length,
                                  curve, DETECT_CURVE_LENGTH);
 
-        /* calculate the mean */
-        float mean = 0;
+        /* calculate the av */
+        float av = 0;
         int hits = 0;
         for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
             if (curve[j] <= 0) continue;
-            mean += curve[j];
+            av += curve[j];
             hits++;
         }
         /* there should be no gaps in the series */
@@ -467,17 +467,17 @@ float detect_orbital_period(float timestamp[],
             response[step] = 0;
             continue;
         }
-        mean /= hits;
+        av /= hits;
 
         /* average density of samples */
-        float mean_density = 0;
+        float av_density = 0;
         hits = 0;
         for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
             if (density[j] <= 0) continue;
-            mean_density += density[j];
+            av_density += density[j];
             hits++;
         }
-        mean_density /= hits;
+        av_density /= hits;
 
         /* variation in the density of samples */
         float density_variance = 0;
@@ -485,8 +485,8 @@ float detect_orbital_period(float timestamp[],
         for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
             if (density[j] > 0) {
                 density_variance +=
-                    (density[j] - mean_density)*
-                    (density[j] - mean_density);
+                    (density[j] - av_density)*
+                    (density[j] - av_density);
                 hits++;
             }
         }
@@ -522,10 +522,10 @@ float detect_orbital_period(float timestamp[],
         int start_index = -1;
         int end_index = -1;
 
-        /* How much difference from the mean? */
+        /* How much difference from the av? */
         int dipped = 0;
         float dipped_density = 0;
-        float threshold_dipped = minimum + ((mean-minimum)*dip_threshold);
+        float threshold_dipped = minimum + ((av-minimum)*dip_threshold);
         for (int j = 0; j < DETECT_CURVE_LENGTH; j++) {
             if (curve[j] < threshold_dipped) {
                 if (start_index == -1) start_index = j;
@@ -565,9 +565,9 @@ float detect_orbital_period(float timestamp[],
             continue;
         }
 
-        /* peaks above the mean are an indicator that this isn't a transit  */
+        /* peaks above the av are an indicator that this isn't a transit  */
         int peaked = 0;
-        float threshold_peaked = mean + ((mean-minimum)*peak_threshold);
+        float threshold_peaked = av + ((av-minimum)*peak_threshold);
         for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
             if (curve[j] > threshold_peaked) {
                 peaked++;
@@ -579,9 +579,9 @@ float detect_orbital_period(float timestamp[],
             continue;
         }
 
-        /* How much difference from the mean? */
+        /* How much difference from the av? */
         int nondipped = 0;
-        float threshold_upper = mean - ((mean-minimum)*0.2);
+        float threshold_upper = av - ((av-minimum)*0.2);
         for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
             if ((curve[j] < threshold_upper) &&
                 (curve[j] > threshold_dipped)) {
@@ -601,17 +601,17 @@ float detect_orbital_period(float timestamp[],
         hits = 0;
         for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
             if (curve[j] > 0) {
-                variance += (curve[j] - mean)*(curve[j] - mean);
+                variance += (curve[j] - av)*(curve[j] - av);
                 hits++;
             }
         }
         response[step] = 0;
         if (hits > 0) {
             response[step] =
-                (mean-minimum) /
+                (av-minimum) /
                 (float)sqrt(variance/hits);
             response[step] =
-                (mean-minimum)*dipped*100/(mean*(1+nondipped));
+                (av-minimum)*dipped*100/(av*(1+nondipped));
             response[step] /= (density_variance*variance);
 
             /* check the density within the area of the dip which

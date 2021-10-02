@@ -264,7 +264,7 @@ int gnuplot_distribution(char * title,
                          char * axis_label)
 {
     char subtitle[256];
-    float mean, variance;
+    float av, variance;
     float range_min=0;
     float range_max=0;
     float time_min=0;
@@ -288,10 +288,10 @@ int gnuplot_distribution(char * title,
         return -4;
     }
 
-    mean = detect_mean(series, series_length);
-    variance = detect_variance(series, series_length, mean);
-    range_min = mean - variance*4;
-    range_max = mean + variance*4;
+    av = detect_av(series, series_length);
+    variance = detect_variance(series, series_length, av);
+    range_min = av - variance*4;
+    range_max = av + variance*4;
 
     if (gnuplot_create_script(plot_script_file,
                               (char*)data_filename,
@@ -341,7 +341,7 @@ int gnuplot_light_curve(char * title,
                         float vertical_scale)
 {
     char subtitle[256];
-    float mean, variance;
+    float av, variance;
     float range_min=0;
     float range_max=0;
     float time_min=0;
@@ -379,10 +379,10 @@ int gnuplot_light_curve(char * title,
         return -4;
     }
 
-    mean = detect_mean(curve, LIGHT_CURVE_LENGTH);
-    variance = detect_variance(curve, LIGHT_CURVE_LENGTH, mean);
-    range_min = mean - (variance*8*vertical_scale);
-    range_max = mean + (variance*8*vertical_scale);
+    av = detect_av(curve, LIGHT_CURVE_LENGTH);
+    variance = detect_variance(curve, LIGHT_CURVE_LENGTH, av);
+    range_min = av - (variance*8*vertical_scale);
+    range_max = av + (variance*8*vertical_scale);
 
     if (gnuplot_create_script(plot_script_file,
                               (char*)data_filename,
@@ -431,7 +431,7 @@ int gnuplot_light_curve_distribution(char * title,
                                      float vertical_scale)
 {
     char subtitle[256];
-    float mean, variance, adjust;
+    float av, variance, adjust;
     float range_min=0;
     float range_max=0;
     float time_min=0;
@@ -470,10 +470,10 @@ int gnuplot_light_curve_distribution(char * title,
         return -4;
     }
 
-    mean = detect_mean(series, series_length);
-    variance = detect_variance(series, series_length, mean);
-    range_min = mean - variance*3*vertical_scale;
-    range_max = mean + variance*3*vertical_scale;
+    av = detect_av(series, series_length);
+    variance = detect_variance(series, series_length, av);
+    range_min = av - variance*3*vertical_scale;
+    range_max = av + variance*3*vertical_scale;
 
     if (gnuplot_create_script(plot_script_file,
                               (char*)data_filename,
