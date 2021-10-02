@@ -31,7 +31,7 @@
  * @brief Detects the starting and ending indexes of active
  *        data sections within a time series
  * @param timestamp A series of timestamps
- * @param series_length The number of entries in the series
+ * @param series_length The number of entries in the time series
  * @param endpoints An array of returned start and end indexes
  * @returns The number of data sections within the series
  */
@@ -70,6 +70,10 @@ int detect_endpoints(float timestamp[], int series_length,
  * @brief Calculates the amount of variance for a light curve
  * @param period_days Orbital period in days
  * @param timestamp
+ * @param series Time series array containing magnitudes
+ * @param series_length The length of the data series
+ * @param curve Returned light curve Array
+ * @param curve_length The number of buckets within the curve
  */
 static float light_curve_variance(float period_days,
                                   float timestamp[],
@@ -92,7 +96,7 @@ static float light_curve_variance(float period_days,
 /**
  * @brief Returns an array containing a light curve for the given orbital period_days
  * @param timestamp Array of imaging times
- * @param series Array containing magnitudes
+ * @param series Time series array containing magnitudes
  * @param series_length The length of the data series
  * @param period_days The expected orbital period
  * @param curve Returned light curve Array
