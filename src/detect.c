@@ -263,7 +263,7 @@ float detect_av(float series[], int series_length)
  * @brief Returns the variance for all data points in a series
  * @param series Array containing data points
  * @param series_length Length of the Array
- * @param av Pre-calculated av value
+ * @param av Pre-calculated average value
  * @returns Variance value
  */
 float detect_variance(float series[], int series_length, float av)
@@ -397,11 +397,12 @@ void adjust_curve(float curve[], int curve_length, int offset)
  *                                  dipped and non-dipped
  * @params expected_dip_radius_percent Expected dip radius as a percentage of
  *                                     the orbital period
- * @params peak_threshold Threshold above the av beyond which to disguard the curve
+ * @params peak_threshold Threshold above the average beyond which to
+ *                        disguard the curve
  * @params max_vacancy_density Maximum density within the area of the dip
  *                             expected to be vacant
- * @params dip_threshold A threshold above which the profile will be considered to
- *                       be in the dipped state
+ * @params dip_threshold A threshold above which the profile will be
+ *                       considered to be in the dipped state
  * @returns The best candidate orbital period, or zero if no transit found
  */
 float detect_orbital_period(float timestamp[],
@@ -608,8 +609,7 @@ float detect_orbital_period(float timestamp[],
         response[step] = 0;
         if (hits > 0) {
             response[step] =
-                (av-minimum) /
-                (float)sqrt(variance/hits);
+                (av-minimum) / (float)sqrt(variance/hits);
             response[step] =
                 (av-minimum)*dipped*100/(av*(1+nondipped));
             response[step] /= (density_variance*variance);
