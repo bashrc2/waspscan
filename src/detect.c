@@ -127,9 +127,8 @@ static void light_curve_base(float timestamp[],
     }
 
     /* normalise */
-    for (i = 0; i < curve_length; i++) {
+    for (i = curve_length-1; i >= 0; i--)
         density[i] /= max_samples;
-    }
 }
 
 /**
@@ -158,10 +157,8 @@ static float dip_vacancy(int start_index, int end_index,
     float den[DETECT_CURVE_LENGTH];
 
     /* get the average magnitude */
-    for (i = 0; i < curve_length; i++) {
-        curve_average_mag += curve[i];
-        den[i] = 0;
-    }
+    for (i = 0; i < curve_length; i++) curve_average_mag += curve[i];
+    memset(den,0,curve_length*sizeof(float));
     curve_average_mag /= curve_length;
 
     /* get the variance */
