@@ -82,7 +82,7 @@ static float light_curve_variance(float period_days,
     int i, index;
     float days, variance = 0;
 
-    for (i = 0; i < series_length; i++) {
+    for (i = series_length-1; i >= 0; i--) {
         days = timestamp[i] / DAY_SECONDS;
         index = (int)(fmod(days,period_days) * curve_length / period_days);
         variance += (series[i] - curve[index])*(series[i] - curve[index]);
