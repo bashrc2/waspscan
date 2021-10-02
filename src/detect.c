@@ -541,7 +541,7 @@ float detect_orbital_period(float timestamp[],
         }
 
         /* dipped area should not be too wide */
-        if (end_index - start_index > DETECT_CURVE_LENGTH*10/100) {
+        if (end_index - start_index > (int)(DETECT_CURVE_LENGTH*10/100)) {
             response[step] = 0;
             continue;
         }
@@ -604,9 +604,9 @@ float detect_orbital_period(float timestamp[],
         response[step] = 0;
         if (hits > 0) {
             response[step] =
-                (av-minimum) / (float)sqrt(variance/hits);
+	        (av-minimum) / (float)sqrt(variance/(float)hits);
             response[step] =
-                (av-minimum)*dipped*100/(av*(1+nondipped));
+	        (av-minimum)*(float)dipped*100.0f/(av*(float)(1+nondipped));
             response[step] /= (density_variance*variance);
 
             /* check the density within the area of the dip which
