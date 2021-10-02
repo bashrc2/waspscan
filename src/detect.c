@@ -56,12 +56,11 @@ int detect_endpoints(float timestamp[], int series_length,
 
     for (i = 1; i < series_length-1; i++) {
         dt = timestamp[i] - timestamp[i-1];
-        if (dt > threshold) {
-            endpoints[ctr*2] = start_index;
-            endpoints[ctr*2+1] = i-1;
-            ctr++;
-            start_index = i+1;
-        }
+        if (dt <= threshold) continue;
+        endpoints[ctr*2] = start_index;
+        endpoints[ctr*2+1] = i-1;
+        ctr++;
+        start_index = i+1;
     }
     endpoints[ctr*2] = -1;
     return ctr;
@@ -216,10 +215,7 @@ static void light_curve_resample(float min_value, float max_value,
     memset(hits,0,curve_length*sizeof(int));
 
     for (i = series_length-1; i >= 0; i--) {
-        if ((series[i] < min_value) ||
-            (series[i] > max_value)) {
-            continue;
-        }
+        if ((series[i] < min_value) || (series[i] > max_value)) continue;
         days = timestamp[i] * DAY_SECONDS;
         index = (int)(fmod(days,period_days) * mult);
         curve[index] += series[i];
@@ -331,7 +327,7 @@ int detect_phase_offset(float curve[], int curve_length)
 {
     int i, j, l, offset = 0;
     float minimum = 0, v;
-    int search_radius = curve_length*5/100;
+    int search_radius = (int)(curve_length*5/100);
 
     for (i = 0; i < curve_length; i++) {
         v = 0;
@@ -358,7 +354,7 @@ int detect_phase_offset(float curve[], int curve_length)
 void adjust_curve(float curve[], int curve_length, int offset)
 {
     int i, index;
-    int adjust = (curve_length/2) - offset;
+    int adjust = (int)(curve_length/2) - offset;
     float new_curve[512];
 
     for (i = 0; i < curve_length; i++) {
@@ -477,12 +473,10 @@ float detect_orbital_period(float timestamp[],
         float density_variance = 0;
         hits = 0;
         for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
-            if (density[j] > 0) {
-                density_variance +=
-                    (density[j] - av_density)*
-                    (density[j] - av_density);
-                hits++;
-            }
+            if (density[j] <= 0) continue;
+            density_variance +=
+                (density[j] - av_density)*(density[j] - av_density);
+            hits++;
         }
         density_variance = (float)(density_variance / (float)hits);
 
@@ -620,10 +614,9 @@ float detect_orbital_period(float timestamp[],
     }
 
     for (int i = steps-1; i >= 0; i--) {
-        if (response[i] > max_response) {
-            max_response = response[i];
-            period_days = min_period_days + (i*increment_days);
-        }
+        if (response[i] <= max_response) continue;
+        max_response = response[i];
+        period_days = min_period_days + (i*increment_days);
     }
 
     return period_days;
