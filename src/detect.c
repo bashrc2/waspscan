@@ -43,9 +43,8 @@ int detect_endpoints(float timestamp[], int series_length,
     float threshold, dt, mean_dt = 0, dt_variance = 0;
     int i,ctr=0;
 
-    for (i = 1; i < series_length; i++) {
+    for (i = 1; i < series_length; i++)
         mean_dt += timestamp[i] - timestamp[i-1];
-    }
     mean_dt /= (series_length-1);
 
     for (i = 1; i < series_length; i++) {
@@ -459,10 +458,9 @@ float detect_orbital_period(float timestamp[],
         float mean = 0;
         int hits = 0;
         for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
-            if (curve[j] > 0) {
-                mean += curve[j];
-                hits++;
-            }
+            if (curve[j] <= 0) continue;
+            mean += curve[j];
+            hits++;
         }
         /* there should be no gaps in the series */
         if (hits < DETECT_CURVE_LENGTH) {
@@ -475,10 +473,9 @@ float detect_orbital_period(float timestamp[],
         float mean_density = 0;
         hits = 0;
         for (int j = DETECT_CURVE_LENGTH-1; j >= 0; j--) {
-            if (density[j] > 0) {
-                mean_density += density[j];
-                hits++;
-            }
+            if (density[j] <= 0) continue;
+            mean_density += density[j];
+            hits++;
         }
         mean_density /= hits;
 
@@ -493,8 +490,7 @@ float detect_orbital_period(float timestamp[],
                 hits++;
             }
         }
-        density_variance =
-            (float)(density_variance/hits);
+        density_variance = (float)(density_variance / hits);
 
         /* find the minimum */
         float minimum = 0;
@@ -529,8 +525,7 @@ float detect_orbital_period(float timestamp[],
         /* How much difference from the mean? */
         int dipped = 0;
         float dipped_density = 0;
-        float threshold_dipped =
-            minimum + ((mean-minimum)*dip_threshold);
+        float threshold_dipped = minimum + ((mean-minimum)*dip_threshold);
         for (int j = 0; j < DETECT_CURVE_LENGTH; j++) {
             if (curve[j] < threshold_dipped) {
                 if (start_index == -1) start_index = j;
