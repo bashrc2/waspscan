@@ -606,7 +606,7 @@ float detect_orbital_period(float timestamp[],
         response[step] = 0;
         if ((hits > 0) && (variance_max > variance_min)) {
             density_variance = 1.0f + density_variance;
-            variance_diff = 1.0f + ((variance_max - variance_min));
+            variance_diff = 1.0f + (variance_max - variance_min);
 
             response[step] =
                 (av-minimum)*(float)dipped*100.0f/(av*(float)(1+nondipped));
