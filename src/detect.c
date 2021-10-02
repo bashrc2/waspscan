@@ -157,15 +157,15 @@ static float dip_vacancy(int start_index, int end_index,
     float den[DETECT_CURVE_LENGTH];
 
     /* get the average magnitude */
-    for (i = 0; i < curve_length; i++) curve_average_mag += curve[i];
+    for (i = curve_length-1; i >= 0; i--) curve_average_mag += curve[i];
     memset(den,0,curve_length*sizeof(float));
     curve_average_mag /= curve_length;
 
     /* get the variance */
-    for (i = 0; i < curve_length; i++) {
+    for (i = curve_length-1; i >= 0; i--)
         curve_variance +=
             (curve[i] - curve_average_mag)*(curve[i] - curve_average_mag);
-    }
+
     curve_variance = (float)sqrt(curve_variance / curve_length);
     min_curve_mag = curve_average_mag - (curve_variance*2.0f);
 
