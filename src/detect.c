@@ -217,7 +217,7 @@ static void light_curve_resample(float min_value, float max_value,
     memset(curve,0,curve_length*sizeof(float));
     memset(hits,0,curve_length*sizeof(int));
 
-    for (i = 0; i < series_length; i++) {
+    for (i = series_length-1; i >= 0; i--) {
         if ((series[i] < min_value) ||
             (series[i] > max_value)) {
             continue;
