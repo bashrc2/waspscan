@@ -1,7 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 #  Convert from fits format to a table
-#  Copyright (C) 2015 Bob Mottram
+#  Copyright (C) 2015, 2021 Bob Mottram
 #  bob@libreserver.org
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -21,14 +21,14 @@ import sys
 from astropy.io import fits
 
 if len(sys.argv) < 2:
-    print "Please specify a fits filename"
+    print("Please specify a fits filename")
     sys.exit(-1)
 filename = sys.argv[1]
 
 try:
     hdulist = fits.open(filename)
 except:
-    print "File not found " + filename
+    print("File not found " + filename)
     sys.exit(-2)
 
 listname="PHOTOMETRY"
@@ -42,7 +42,7 @@ if len(sys.argv) > 2:
 try:
     scidata = hdulist[listname].data
 except:
-    print "Table not found"
+    print("Photometry table not found")
     sys.exit(-3)
 
 no_of_fields = len(scidata[0])
@@ -73,7 +73,7 @@ for i in range(len(field_name)):
     if i < (len(field_name)-1):
         sys.stdout.write(field_name[i] + " ")
     else:
-        print field_name[i]
+        print(field_name[i])
 
 # Field units header
 sys.stdout.write("| ")
@@ -81,7 +81,7 @@ for i in range(len(field_units)):
     if i < (len(field_units)-1):
         sys.stdout.write('"' + field_units[i] + '" ')
     else:
-        print '"' + field_units[i] + '"'
+        print('"' + field_units[i] + '"')
 
 # Show the data
 for i in range(len(scidata)):
@@ -89,6 +89,6 @@ for i in range(len(scidata)):
         if j < no_of_fields-1:
             sys.stdout.write(str(scidata[i][j]) + " ")
         else:
-            print scidata[i][j]
+            print(scidata[i][j])
 
 sys.exit(0)

@@ -30,72 +30,31 @@ SCAN_COMMAND="../waspscan --peak $PEAK_THRESHOLD --diprad $DIP_RADIUS_PERCENT --
 
 score=0
 
-function scan_positives {
+function scan_unknown {
     ctr_detected=0
     ctr_positive=0
     fails=0
     tollerance=0.01
 
-    FILES=positive/*
+    FILES=unknown/*
     for f in $FILES
     do
         echo "Scanning $f"
 
         ref=$(echo "$f" | awk -F '_' '{print $2}' | awk -F '.tbl' '{print $1}')
-        expected_period=$(cat positive/periods.txt | grep "$ref" | head -n 1 | awk -F ' ' '{print $2}')
-        min_period=$(awk -vn1="$expected_period" -vn2="$tollerance" 'BEGIN{printf ("%.8f\n",n1-n2)}')
-        max_period=$(awk -vn1="$expected_period" -vn2="$tollerance" 'BEGIN{printf ("%.8f\n",n1+n2)}')
 
         was_detected=0
+	echo "${SCAN_COMMAND} $f"
         result=$(${SCAN_COMMAND} "$f")
         if [[ $result == *"orbital_period"* ]]; then
             detected_period=$(echo $result | awk -F 'orbital_period_days ' '{print $2}')
-            echo "detected period: $detected_period"
-            if [ $(awk -vn1="$detected_period" -vn2="$min_period" 'BEGIN{printf ("%d\n",n1<n2)}') -eq 0 ]; then
-                if [ $(awk -vn1="$detected_period" -vn2="$max_period" 'BEGIN{printf ("%d\n",n1>n2)}') -eq 0 ]; then
-                    ctr_detected=$((ctr_detected + 1))
-                    was_detected=1
-                else
-                    echo "Detected $detected_period but greater than the maximum expected orbital period $max_period"
-                fi
-            else
-                echo "Detected $detected_period but less than the minimum expected orbital period $min_period"
-            fi
+            echo "detected period: $detected_period"	    
+            score=$((score + 1))
         fi
-        if [[ $was_detected == 0 ]]; then
-            fails=$((fails + 1))
-        fi
-        if [ ${fails} -gt 5 ]; then
-            echo 'Too many failures'
-            exit 1
-        fi
-        ctr_positive=$((ctr_positive + 1))
-        echo "${ctr_detected}/${ctr_positive} positive detections"
     done
-
-    score=$((score + ctr_detected))
 }
 
-function scan_negatives {
-    ctr_detected=0
-    ctr_negative=0
-
-    FILES=negative/*
-    for f in $FILES
-    do
-        echo "Scanning $f"
-        ${SCAN_COMMAND} "$f"
-        if [ ! "$?" = "0" ]; then
-            ctr_detected=$((ctr_detected + 1))
-        fi
-        ctr_negative=$((ctr_negative + 1))
-        echo "${ctr_detected}/${ctr_negative} negative detections"
-    done
-    score=$((score + ctr_detected))
-}
-
-scan_positives
-scan_negatives
+scan_unknown
 
 rm *.png *.tbl *.txt
 
