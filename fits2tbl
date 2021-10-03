@@ -30,7 +30,7 @@ try:
 except:
     print("File not found " + filename)
     sys.exit(-2)
-
+    
 listname="PHOTOMETRY"
 if len(sys.argv) > 2:
     if sys.argv[2]:
@@ -43,6 +43,7 @@ try:
     scidata = hdulist[listname].data
 except:
     print("Photometry table not found")
+    print(hdulist.info(0))
     sys.exit(-3)
 
 no_of_fields = len(scidata[0])
